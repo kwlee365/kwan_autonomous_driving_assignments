@@ -1,0 +1,7 @@
+<launch>
+<!-- 2-2. local map for parking -->
+	<node name="heightmap_node" pkg="velodyne_height_map" type="heightmap_node" output="screen"/>
+
+<!-- main controller -->
+    <node pkg="tracker" type="tracker" name="DYROS_Controller" output="screen" />
+	<node name="rviz_planner" pkg="rviz" type="rviz" args="-d $(find tracker)/rviz/carla.rviz" /></launch>

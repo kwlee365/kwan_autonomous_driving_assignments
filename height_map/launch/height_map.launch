@@ -1,0 +1,4 @@
+<launch>
+ <node pkg = "velodyne_height_map" type = "heightmap_node" name = "height_map_node" output="screen"/>
+ <!-- <node name="rviz_height_map" pkg="rviz" type="rviz" args="-d /home/dyros-vehicle/catkin_ws/src/height_map/rviz/height_map.rviz" /> -->
+</launch>
