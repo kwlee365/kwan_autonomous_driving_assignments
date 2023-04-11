@@ -16,7 +16,7 @@ Panels:
       Expanded:
         - /occ map1/Position1
       Splitter Ratio: 0.5032119750976562
-    Tree Height: 1057
+    Tree Height: 366
   - Class: rviz/Tool Properties
     Expanded: ~
     Name: Tool Properties
@@ -89,14 +89,6 @@ Visualization Manager:
         RegionOfInterest: true
       Queue Size: 100
       Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /Car_pw
-      Name: vehicle's rear axle
-      Namespaces:
-        {}
-      Queue Size: 100
-      Value: true
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
@@ -119,40 +111,6 @@ Visualization Manager:
       Shaft Diameter: 0.10000000149011612
       Shaft Length: 0.10000000149011612
       Topic: /ref_path
-      Unreliable: false
-      Value: true
-    - Alpha: 1
-      Arrow Length: 0.30000001192092896
-      Axes Length: 0.30000001192092896
-      Axes Radius: 0.009999999776482582
-      Class: rviz/PoseArray
-      Color: 255; 255; 255
-      Enabled: true
-      Head Length: 0.3499999940395355
-      Head Radius: 0.550000011920929
-      Name: NormalTargetTree
-      Queue Size: 10
-      Shaft Length: 0.20000000298023224
-      Shaft Radius: 0.25
-      Shape: Arrow (3D)
-      Topic: /normal_target_tree
-      Unreliable: false
-      Value: true
-    - Alpha: 1
-      Arrow Length: 0.30000001192092896
-      Axes Length: 0.30000001192092896
-      Axes Radius: 0.009999999776482582
-      Class: rviz/PoseArray
-      Color: 255; 255; 255
-      Enabled: true
-      Head Length: 0
-      Head Radius: 0
-      Name: CollisionRange
-      Queue Size: 10
-      Shaft Length: 0.10000000149011612
-      Shaft Radius: 0.10000000149011612
-      Shape: Arrow (3D)
-      Topic: /collision_edge
       Unreliable: false
       Value: true
     - Class: rviz/Marker
@@ -195,10 +153,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 30.834848403930664
+      Scale: 35.973392486572266
       Target Frame: <Fixed Frame>
-      X: 13.190651893615723
-      Y: 9.435145378112793
+      X: 6.625976085662842
+      Y: 15.0641450881958
     Saved: ~
 Window Geometry:
   Displays:
