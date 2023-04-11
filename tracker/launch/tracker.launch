@@ -4,4 +4,9 @@
 
 <!-- main controller -->
     <node pkg="tracker" type="tracker" name="DYROS_Controller" output="screen" />
+	
+	<param name="K_y"     type="double" value="1"/>
+	<param name="K_th"    type="double" value="2"/>
+	<param name="FF_gain" type="double" value="1.4"/>
+
 	<node name="rviz_planner" pkg="rviz" type="rviz" args="-d $(find tracker)/rviz/carla.rviz" /></launch>
