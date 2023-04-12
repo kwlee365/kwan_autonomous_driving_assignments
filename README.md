@@ -18,7 +18,9 @@ Disclaimer: Please note that I am not responsible for any negative consequences 
 
 ### 1. Lanuch the server
 
-Software requirements
+Ref: <https://carla.readthedocs.io/en/0.9.12/build_linux/>
+
+1. Software requirements
 ```
 $ sudo apt-get update &&
   sudo apt-get install wget software-properties-common &&
@@ -28,18 +30,19 @@ $ sudo apt-get update &&
   sudo apt-get update
 ```
 
-Ubuntu 20.04.
+2. Ubuntu 20.04. (The following commands depend on your Ubuntu version. Make sure to choose accordingly.)
+
 ```
 $ sudo apt-get install build-essential clang-8 lld-8 g++-7 cmake ninja-build libvulkan1 python python-pip python-dev python3-dev python3-pip libpng-dev libtiff5-dev libjpeg-dev tzdata sed curl unzip autoconf libtool rsync libxml2-dev git
 ```
 
-All Ubuntu Systems
+3. All Ubuntu Systems (To avoid compatibility issues)
 ```
 $ sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/lib/llvm-8/bin/clang++ 180 &&
   sudo update-alternatives --install /usr/bin/clang clang /usr/lib/llvm-8/bin/clang 180
 ```
 
-Run CARLA
+4. Run CARLA
 ```
 $ ./CarlaUE4.sh
 ```
