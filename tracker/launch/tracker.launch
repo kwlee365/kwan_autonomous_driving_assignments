@@ -5,8 +5,18 @@
 <!-- main controller -->
     <node pkg="tracker" type="tracker" name="DYROS_Controller" output="screen" />
 	
-	<param name="K_y"     type="double" value="1"/>
-	<param name="K_th"    type="double" value="2"/>
-	<param name="FF_gain" type="double" value="1.4"/>
+	<param name="desired_vel"     type="double" value="3.0"/>
+<!-- HW 1-->
+	<param name="look_ahead_dist" type="double" value="3.0"/>
+<!-- HW 2-->
+	<param name="gainK"           type="double" value="5.0"/>
+<!-- HW 3-->
+	<param name="K_y"             type="double" value="1.0"/>
+	<param name="K_th"            type="double" value="1.0"/>
+	<param name="FF_gain"         type="double" value="0.625"/>
+
+	<!-- <param name="K_y"             type="double" value="1.0"/>
+	<param name="K_th"            type="double" value="2.0"/>
+	<param name="FF_gain"         type="double" value="0.625"/> -->
 
 	<node name="rviz_planner" pkg="rviz" type="rviz" args="-d $(find tracker)/rviz/carla.rviz" /></launch>

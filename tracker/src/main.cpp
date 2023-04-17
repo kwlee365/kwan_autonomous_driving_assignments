@@ -75,10 +75,20 @@ bool m_finish_flag = false;
 
 // Kwan add
 int Idx_old_ = 0;
-
+int control_loop_counter = 0;
+double mean_error = 0.0;
+double std_error = 0.0;
+double max_error = 0.0;
+double min_error = 1000000.0;
+double error_sum = 0.0;
+double square_error_sum = 0.0;
+// From getparam (for gain tunning) //
 double K_y_temp = 0.0;
 double K_th_temp = 0.0;
 double FF_gain_temp = 0.0;
+double desired_vel_temp = 0.0;
+double look_ahead_dist_temp = 0.0;
+double gainK_temp = 0.0;
 
 void Local2Global(double Lx, double Ly, double &Gx, double &Gy)
 {
@@ -211,9 +221,7 @@ pair<double, double> PurePursuit(double look_ahead_dist, double constant_velo_)
     // (1)
     // Index of Look-ahead Point
     int Idx_ = 0;
-    double theta = 0;
     double minDist = 99999, dist = 0;
-
     for (int i = Idx_old_; i < m_ref_path.size() - 1; i++)
     {
         dist = DISTANCE(m_ref_path[i][0], m_ref_path[i][1],
@@ -367,6 +375,7 @@ pair<double, double> Kanayama(double K_y, double K_th, double ref_velo)
             }
         }
     }
+    Idx_old_ = Idx_;
 
     RefPtX = m_ref_path[Idx_][0];
     RefPtY = m_ref_path[Idx_][1];
@@ -382,8 +391,6 @@ pair<double, double> Kanayama(double K_y, double K_th, double ref_velo)
                         rel_x,   rel_y,   rel_th);
     double theta_e = atan2(sin(rel_th), cos(rel_th));
     double y_e = rel_y;
-
-    Idx_old_ = Idx_;
 
     /* ========================================
     TODO: Code the Kanayama steering controller */
@@ -402,18 +409,13 @@ pair<double, double> Kanayama(double K_y, double K_th, double ref_velo)
 
     velo_result = ref_velo;
 
-    // Longitudinal Control
-    // velo_result = (ref_velo * cos(heading_err)); // basic KANAYAMA // [km/h]
-    // velo_result = (ref_velo * cos(heading_err) + K_x * x_e); // basic KANAYAMA
-    // As the fixed ref_pose is used, neglect the 'K_x*x_e' term.
-
     /* ========== The problem #4 for homework 3. Longitudinal controller considering vehicle curvature errors ==========
     Kim, Minsoo, et al. "A Comparative Analysis of Path Planning and Tracking Performance According to the Consideration
     of Vehicle's Constraints in Automated Parking Situations." The Journal of Korea Robotics Society 16.3 (2021): 250-259. */
-    // double K_v = 0.3;
-    // double vehicle_curv = velo_result*KMpH2MpS* tan(m_Steer_cmd / (_RAD2DEG*SteerRatio)) / WHEEL_BASE;
-    // velo_result = (velo_result != 0) ? velo_result * (1.0 - K_v * abs(CalculateCurvature(ref_idx) - vehicle_curv) / (2.0 * m_curvature_max)) : 0.0; // [m/s]
-    // velo_result = parkingVeloController(velo_result);
+    double K_v = 0.3;
+    double vehicle_curv = velo_result*KMpH2MpS* tan(m_Steer_cmd / (_RAD2DEG*SteerRatio)) / WHEEL_BASE;
+    velo_result = (velo_result != 0) ? velo_result * (1.0 - K_v * abs(CalculateCurvature(Idx_) - vehicle_curv) / (2.0 * m_curvature_max)) : 0.0; // [m/s]
+    velo_result = parkingVeloController(velo_result);
 
     velo_result = max(velo_result, MIN_VEL_INPUT);
     velo_result = min(velo_result, MAX_VEL_INPUT);
@@ -423,6 +425,26 @@ pair<double, double> Kanayama(double K_y, double K_th, double ref_velo)
     return std::make_pair(steerAngle, velo_result);
 }
 
+void CalculateCrossTrackErr(double error)
+{
+    control_loop_counter += 1;
+
+    error_sum        += error;
+    square_error_sum += error*error;
+
+    mean_error               = error_sum        / control_loop_counter;
+    double mean_square_error = square_error_sum / control_loop_counter;
+    std_error                = sqrt(mean_square_error - pow(mean_error,2)); 
+
+    if(error > max_error)
+    {
+        max_error = error;
+    }
+    if(min_error > error)
+    {
+        min_error = error;
+    }
+}
 // Assumes, forward motion only
 void CallbackRefPath(const nav_msgs::Path::ConstPtr &msg)
 {
@@ -537,6 +559,7 @@ void GoalCheck(double check_thres, int which_tracker)
     if (!goal_checking_front && almost_done_flag && (DISTANCE(m_car.x, m_car.y, m_goal_pose[0], m_goal_pose[1]) < check_thres))
     {
         std::cout << "Goal!" << std::endl;
+        std::cout << "The error is evaluated between the rear-axle and the closest point on the path from the vehicle." << std::endl;
         double tracking_time = (ros::Time::now() - start_ros_time).toSec();
 
         double rel_x, rel_y, rel_th;
@@ -544,6 +567,16 @@ void GoalCheck(double check_thres, int which_tracker)
         std::cout << "Tracking time [s]: " << tracking_time << std::endl;
         std::cout << "Lateral error [m]: " << abs(rel_y) << std::endl;
         std::cout << "Orientation error [deg]: " << _RAD2DEG * atan2(sin(rel_th), cos(rel_th)) << std::endl;
+
+        std::cout << "max cross track error [m]: "                << max_error << std::endl;
+        std::cout << "min cross track error [m]: "                << min_error << std::endl;
+        std::cout << "mean cross track error [m]: "               << mean_error << std::endl;
+        std::cout << "standard deviation cross track error [m]: " << std_error << "\n" << std::endl;
+
+        std::cout << "error_sum [m]: "                            << error_sum << std::endl;
+        std::cout << "square_error_sum [m^2]: "                   << square_error_sum << std::endl;
+        std::cout << "control_loop_counter: "                     << control_loop_counter << std::endl;
+
 
         // For CARLA
         std_msgs::Float32MultiArray msg_;
@@ -560,6 +593,7 @@ void GoalCheck(double check_thres, int which_tracker)
     if (goal_checking_front && almost_done_flag && (DISTANCE(car_front_x, car_front_y, goal_front_x, goal_front_y) < check_thres))
     {
         std::cout << "Goal!" << std::endl;
+        std::cout << "The error is evaluated between the front-axle and the closest point on the path from the vehicle." << std::endl;
         double tracking_time = (ros::Time::now() - start_ros_time).toSec();
 
         double rel_x, rel_y, rel_th;
@@ -567,6 +601,15 @@ void GoalCheck(double check_thres, int which_tracker)
         std::cout << "Tracking time [s]: " << tracking_time << std::endl;
         std::cout << "Lateral error [m]: " << abs(rel_y) << std::endl;
         std::cout << "Orientation error [deg]: " << _RAD2DEG * atan2(sin(rel_th), cos(rel_th)) << std::endl;
+
+        std::cout << "max cross track error [m]: "                << max_error << std::endl;
+        std::cout << "min cross track error [m]: "                << min_error << std::endl;
+        std::cout << "mean cross track error [m]: "               << mean_error << std::endl;
+        std::cout << "standard deviation cross track error [m]: " << std_error << "\n" << std::endl;
+
+        std::cout << "error_sum [m]: "                            << error_sum << std::endl;
+        std::cout << "square_error_sum [m^2]: "                   << square_error_sum << std::endl;
+        std::cout << "control_loop_counter: "                     << control_loop_counter << std::endl;
 
         // For CARLA
         std_msgs::Float32MultiArray msg_;
@@ -617,20 +660,25 @@ void Compute()
         {
         case 1:
         {                                                // PurePursuit
-            CalculateClosestPt(pWIdx, m_car.x, m_car.y); // Computing the closest point from the rear axle
-            _control = PurePursuit(2.0, 3.0);
+            double min_dist = CalculateClosestPt(pWIdx, m_car.x, m_car.y); // Computing the closest point from the rear axle
+            _control = PurePursuit(look_ahead_dist_temp, desired_vel_temp);
+            CalculateCrossTrackErr(min_dist);
             break;
         }
         case 2:
-        {                                                                                                                            // Stanley
+        {                                                 // Stanley
             double min_dist = CalculateClosestPt(pWIdx, m_car.x + WHEEL_BASE * cos(m_car.th), m_car.y + WHEEL_BASE * sin(m_car.th)); // Computing the closest point from the front axle
-            _control = Stanley(1.0, 3.0, min_dist);
+            _control = Stanley(gainK_temp, desired_vel_temp, min_dist);
+            CalculateCrossTrackErr(min_dist);
             break;
         }
         case 3:                                          // Kanayama
-            CalculateClosestPt(pWIdx, m_car.x, m_car.y); // Computing the closest point from the rear axle
-            _control = Kanayama(K_y_temp, K_th_temp, 3.0);
+        {
+            double min_dist = CalculateClosestPt(pWIdx, m_car.x, m_car.y); // Computing the closest point from the rear axle
+            _control = Kanayama(K_y_temp, K_th_temp, desired_vel_temp);
+            CalculateCrossTrackErr(min_dist);
             break;
+        }
         default:
         {
             _control = PurePursuit(0.0, 0);
@@ -739,13 +787,15 @@ void LOCALPLANNERTHREAD()
     Sub_localization = nh_.subscribe("/LocalizationData", 10, &CallbackLocalizationData);
     Sub_refPath = nh_.subscribe("ref_path", 1, &CallbackRefPath); // From doRRT node
 
+    nh_.getParam("desired_vel", desired_vel_temp);
+    // HW1
+    nh_.getParam("look_ahead_dist", look_ahead_dist_temp);
+    // HW2
+    nh_.getParam("gainK", gainK_temp);
+    // HW3
     nh_.getParam("K_y"    , K_y_temp);
     nh_.getParam("K_th"   , K_th_temp);
     nh_.getParam("FF_gain", FF_gain_temp);
-
-    cout << "K_y: " << K_y_temp <<  endl;
-    cout << "K_th: " << K_th_temp <<  endl;
-    cout << "FF_gain: " << FF_gain_temp << endl;
 
     // MemberValInit();
     cout << "START CONTROLLER !!!" << endl;

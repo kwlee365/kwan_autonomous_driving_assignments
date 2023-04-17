@@ -14,7 +14,7 @@ Disclaimer: Please note that I am not responsible for any negative consequences 
 - Build these packages (tracker, heightmap) first before checking above libraries.
 - If it gives you errors, then solve compatibility issues step-by-step.
 
-## How to install
+## How to launch
 
 ### 1. Lanuch the server
 
