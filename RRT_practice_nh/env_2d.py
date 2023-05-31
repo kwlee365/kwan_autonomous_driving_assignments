@@ -65,6 +65,8 @@ class Env2D():
     
   def initialize_kd_tree(self,img):
     obstacles=np.argwhere(img==0)
+    # print(type(obstacles))
+    # print(obstacles)
     self.kd_tree = KDTree(list(obstacles), leaf_size=2)
 
   def free_space_volume(self):
@@ -114,8 +116,8 @@ class Env2D():
     """
     pix_x, pix_y, yaw = self.to_image_coordinates_continuous(state)
     return [(pix_y, pix_x),
-                    (pix_y+math.sin(yaw)*1.5*self.collision_radius, pix_x+math.cos(yaw)*1.5*self.collision_radius),
-                    (pix_y+math.sin(yaw)*3*self.collision_radius, pix_x+math.cos(yaw)*3*self.collision_radius)]
+            (pix_y+math.sin(yaw)*1.5*self.collision_radius, pix_x+math.cos(yaw)*1.5*self.collision_radius),
+            (pix_y+math.sin(yaw)*3*self.collision_radius, pix_x+math.cos(yaw)*3*self.collision_radius)]
 
 
   def get_collision_circles(self, state):
@@ -126,8 +128,8 @@ class Env2D():
     """
     (pix_x, pix_y, yaw)=state
     return [(pix_x, pix_y),
-                    (pix_x+math.cos(yaw)*1.5*self.collision_radius, pix_y+math.sin(yaw)*1.5*self.collision_radius),
-                    (pix_x+math.cos(yaw)*3*self.collision_radius, pix_y+math.sin(yaw)*3*self.collision_radius)]
+            (pix_x+math.cos(yaw)*1.5*self.collision_radius, pix_y+math.sin(yaw)*1.5*self.collision_radius),
+            (pix_x+math.cos(yaw)*3*self.collision_radius, pix_y+math.sin(yaw)*3*self.collision_radius)]
 
 
   def is_inside_boundaries(self, circles_center):
@@ -138,6 +140,27 @@ class Env2D():
               False - at least one circle outside
     """
     ### TODO ###
+    is_circles_bool = [False, False, False]
+    
+    for j in range(len(circles_center)):
+      center = circles_center[j]      
+      circle_center_min_bounded = [self.x_lims[0] + self.collision_radius,
+                                  self.y_lims[0] + self.collision_radius]
+      circle_center_max_bounded = [self.x_lims[1] - self.collision_radius,
+                                  self.y_lims[1] - self.collision_radius]
+
+      is_circle_bool = [False, False]    
+      for i in range(len(center)):
+          if (circle_center_min_bounded[i] <= center[i] <= circle_center_max_bounded[i]):
+            is_circle_bool[i] = True
+          else:
+            is_circle_bool[i] = False
+      
+      is_circles_bool[j] = all(is_circle_bool)
+      
+    if not all(is_circles_bool):
+      return False
+
     return True
   
   def collision_free_state(self, state):
@@ -146,12 +169,31 @@ class Env2D():
       @param state - tuple of (x,y,yaw) values in world frame
       @return 1 - free
               0 - collision
+              
+      @Kwan add
+      1. initialize_kd_tree: obstacle variable imply 0 (black) argmuents in the image.
+      2. query_radius(X, r, return_distance=False, count_only=False, sort_results=False)
+      -> query the tree for neighbors within a radius r.
+      -> it returns the number of obstacle points within a radius r from X.
     """
     ### TODO ###
-    # circles_center_image_coordinates=self.get_collision_circles_image_coordinates(state)
-    # circles_center=self.get_collision_circles(state)
+    circles_center=self.get_collision_circles(state)
+    circles_center_image_coordinates=self.get_collision_circles_image_coordinates(state)
+   
+    # Check boundary
+    if not self.is_inside_boundaries(circles_center):
+      return False
     
-    # return is_free
+    # Check Collision
+    np_circles_center_image_coordinates = np.array(circles_center_image_coordinates)
+    colision_within_r = self.kd_tree.query_radius(np_circles_center_image_coordinates, 
+                                                  self.collision_radius, 
+                                                  return_distance=False, 
+                                                  count_only=True, 
+                                                  sort_results=False)
+    if not np.all(colision_within_r == 0):
+      return False
+    
     return True
   
   def collision_free_states(self, states):
@@ -162,7 +204,10 @@ class Env2D():
               0 - at least one collision
     """
     ### TODO ###
-    # return are_free
+    for i in range(len(states)):
+       if self.collision_free_state(states[i]) == False:
+          return False
+        
     return True
 
   def to_image_coordinates(self, state):
@@ -266,8 +311,6 @@ class Env2D():
     else:
         return self.axes.plot(state[0], state[1], marker='o',  markeredgecolor=edge_color, markersize=msize, color = color, alpha=alpha)
 
-
-    
   def plot_states(self, states, color='red', edge_color='black', alpha=1.0, msize=9):
     for state in states:
       self.plot_state(state, color=color, edge_color=edge_color, alpha=alpha, msize=msize)   
@@ -339,5 +382,3 @@ class Env2D():
       plt.close(self.figure)
       self.plot_initialized = False
     self.image = None
-   
-    

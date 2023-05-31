@@ -163,11 +163,32 @@ def get_random_sample(SMP):
 
       @param SMP - RRT
       @return tuple of (x,y,yaw) - the sampled state, the yaw unit is radians
-              None - if the sampled is in collision or is already contained in the RRT tree 
+              None - if the sampled is in collision or is already contained in the RRT tree
+              
+      @Kwan add
+      1. is_contain:   check the samples is contained in the Tree
+      2. is_collision: check the samples is in the colision
     """  
     ### TODO ###
-    # return random_sample
-    return None
+    """
+    y = Ax + b (x: 0 ~ 1)
+    x=0: ymin = b
+    x=1: ymax = A + b
+    
+    A = ymax - ymin
+    b = ymin
+    """
+    x = (x_lims[1] - x_lims[0])*random.random() + x_lims[0]
+    y = (y_lims[1] - y_lims[0])*random.random() + y_lims[0]
+    yaw = random.random() * 2*math.pi
+    
+    random_sample = [x, y, yaw]
+    
+    if(SMP.is_contain(random_sample) or SMP.is_collision(random_sample)):
+        return None
+    
+    return random_sample
+
 
 
 def test_random_samples():
@@ -196,7 +217,7 @@ def test_collision():
 
 def main():
     test_collision() #assignment question 1
-    test_random_samples() #assignment question 1
+    # test_random_samples() #assignment question 1
     # launch_RRT("RRT") #assignment question 2
     # launch_RRT("RRTstar") #assignment question 3
 
