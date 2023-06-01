@@ -1,3 +1,5 @@
+#In[]
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import random
@@ -14,7 +16,7 @@ from rrtstar2d import RRTstar
 
 #RRT visualization parameters
 visualize_tree = 'all' #None, 'solution_path' or 'all'
-visualize_tree_iter=400 #None or int
+visualize_tree_iter=1000 #None or int
 visualize_vid = True #bool
 
 #Set some problem parameters
@@ -31,14 +33,12 @@ turning_radius = 10 #the real turning_radius of a car is around 5 or 6, for a be
 collision_radius = 2.5
 max_iter = 3000
 
-
 #Load environment from file 
 # envfile = os.path.abspath("./motion_planning_datasets/100by100/mazes/test/904.png")
 envfile = os.path.abspath("./motion_planning_datasets/100by100/shifting_gaps/train/1.png")
 env_params = {'x_lims': x_lims, 'y_lims': y_lims,"turning_radius": turning_radius, 'collision_radius': collision_radius}
 planning_env = Env2D()
 planning_env.initialize(envfile, env_params)
-
 
 def RRT_video_visualization(solution_path, video_file_path = 'RRT.mp4'):
     """ Creates a video showing the vehicle following the path solution_path and save it in video_file_path.
@@ -62,7 +62,9 @@ def RRT_tree_visualization(solution_path, tree):
         planning_env.plot_tree(tree, 'blue', 3, 0.3)
     if visualize_tree != None and solution_path != None:
         planning_env.plot_path(solution_path, 'red', 5, 0.5)
+        
     plt.show()
+    
     
 
 def RRT_visualization_all(SMP, solution_path, video_file_path = 'RRT.mp4'):
@@ -103,6 +105,7 @@ def RRT_main_loop(SMP, planner):
                 SMP.update_best() # find best q
                 solution_path = SMP.reconstruct_path(SMP._q_best)
             RRT_tree_visualization(solution_path, SMP.get_vertices())
+
         iteration+=1
         random_sample=get_random_sample(SMP)
         if random_sample is None:
@@ -178,16 +181,19 @@ def get_random_sample(SMP):
     A = ymax - ymin
     b = ymin
     """
-    x = (x_lims[1] - x_lims[0])*random.random() + x_lims[0]
-    y = (y_lims[1] - y_lims[0])*random.random() + y_lims[0]
-    yaw = random.random() * 2*math.pi
-    
-    random_sample = [x, y, yaw]
-    
-    if(SMP.is_contain(random_sample) or SMP.is_collision(random_sample)):
-        return None
-    
-    return random_sample
+    if(random.random() <= goal_bias_prob):
+        return goal
+    else:
+        x = (x_lims[1] - x_lims[0])*random.random() + x_lims[0]
+        y = (y_lims[1] - y_lims[0])*random.random() + y_lims[0]
+        yaw = random.random() * 2*math.pi
+
+        random_sample = [x, y, yaw]
+
+        if(SMP.is_contain(random_sample) or SMP.is_collision(random_sample)):
+            return None
+
+        return random_sample
 
 
 
@@ -216,12 +222,14 @@ def test_collision():
     plt.show() # Visualizing results    
 
 def main():
-    test_collision() #assignment question 1
+    # test_collision() #assignment question 1
     # test_random_samples() #assignment question 1
     # launch_RRT("RRT") #assignment question 2
-    # launch_RRT("RRTstar") #assignment question 3
+    launch_RRT("RRTstar") #assignment question 3
 
 
 if __name__ == "__main__":
     main()
 
+
+# %%

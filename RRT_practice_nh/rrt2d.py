@@ -4,42 +4,45 @@ import math
 import reeds_shepp as rs
 import decimal
 
+
 class Vertex():
-    def __init__(self,q,parent=None,RS_result=None):
-        self.q=q
-        self.parent=parent
-        if RS_result!=None:
-            self.cost=self.parent.cost+RS_result["path_cost"]
-            self.path_cost=RS_result["path_cost"]
-            self.path=RS_result["path"]
+    def __init__(self, q, parent=None, RS_result=None):
+        self.q = q
+        self.parent = parent
+        if RS_result != None:
+            self.cost = self.parent.cost+RS_result["path_cost"]
+            self.path_cost = RS_result["path_cost"]
+            self.path = RS_result["path"]
         else:
-            self.cost=0
-            self.path_cost=0
-            self.path=None
-        self.children=[]
-        
+            self.cost = 0
+            self.path_cost = 0
+            self.path = None
+        self.children = []
+
     def update_parent(self, parent, RS_result, reversed_path=False):
-        self.parent=parent
-        self.cost=self.parent.cost+RS_result["path_cost"]
-        self.path_cost=RS_result["path_cost"]
+        self.parent = parent
+        self.cost = self.parent.cost+RS_result["path_cost"]
+        self.path_cost = RS_result["path_cost"]
         if reversed_path:
-            self.path=list(reversed(RS_result["path"]))
+            self.path = list(reversed(RS_result["path"]))
         else:
-            self.path=RS_result["path"]
-        
+            self.path = RS_result["path"]
+
     def get_parent(self):
         return self.parent
-    
+
     def get_cost(self):
         return self.cost
 
-class RRT(object): # assume 2d car-like non-holonomic robot
+
+class RRT(object):  # assume 2d car-like non-holonomic robot
     def __init__(self, q_init, env, extend_len=1, goal_bias_ratio=0.05, waypoint_step_size=1):
-        assert decimal.Decimal(str(extend_len))%decimal.Decimal(str(waypoint_step_size))==0, f"extend_len must be a multiple of waypoint_step_size, but {extend_len} is not a multiple of {waypoint_step_size}"
-        root=Vertex(q_init)
+        assert decimal.Decimal(str(extend_len)) % decimal.Decimal(str(
+            waypoint_step_size)) == 0, f"extend_len must be a multiple of waypoint_step_size, but {extend_len} is not a multiple of {waypoint_step_size}"
+        root = Vertex(q_init)
         self.vertices = [root]
         self.qs = [q_init]
-        self.tree=root
+        self.tree = root
         self._env = env
         self._extend_len = extend_len
         self._num_vertices = 1
@@ -48,30 +51,47 @@ class RRT(object): # assume 2d car-like non-holonomic robot
         self._q_goal_set = []
         self._q_best = None
         self._best_cost = math.inf
-    
+        self.turning_radius = env.turning_radius
+
     def get_vertices(self):
         return self.vertices
-    
 
     def is_contain(self, q):
         """ 
           @param q - tuple of (x,y,yaw), a state
           @return True - the state is in the tree 
                   False - not in the tree
-        """  
+        """
         return q in self.qs
-    
-    
+
     def search_nearest_vertex(self, p):
         """ Given a state, returns the nearest vertex in the tree using the reeds shepp distance
 
           @param p - tuple of (x,y,yaw), a state
           @return Vertex, nearest neighbor
-        """  
+          
+          @Kwan add
+          https://github.com/liespace/pyReedsShepp/blob/master/reeds_shepp/reeds_shepp.pyx
+          
+          1. type(self.vertices) = list
+          2. def path_length(q0, q1, rho):
+                return PyReedsSheppPath(q0, q1, rho).distance()
+        """
+
         ### TODO ###
-        # return min_v
-        pass
-    
+        nearest_distance = math.inf
+        min_v = self.vertices[0]
+
+        for v in self.vertices:
+            rs_distance = rs.path_length(v.q, p, self.turning_radius)
+            # print("random vert: ", p)
+            # print("vert: ", v.q)
+            # print("dist: ", rs_distance)
+            if rs_distance < nearest_distance:
+                nearest_distance = rs_distance
+                min_v = v
+
+        return min_v
 
     def get_RS_result(self, start, end, turning_radius, step_size):
         """ Returns the result of the reeds shepp steering function between 2 states
@@ -81,13 +101,15 @@ class RRT(object): # assume 2d car-like non-holonomic robot
           @param turning_radius - float
           @param step_size - float, step size between 2 waypoints
           @return Dict
-        """  
+          
+          @Kwan add
+          https://github.com/liespace/pyReedsShepp/blob/master/reeds_shepp/reeds_shepp.pyx
+        """
         ### TODO ###
-        # RS_result["path_cost"]= # It should contains the cost (path length) as double
-        # RS_result["path"]= # It should contains the list of tuples of (x,y,yaw) along the RS path 
-        # return RS_result
-        pass
-    
+        RS_result = {}
+        RS_result = {"path_cost":rs.path_length(start, end, turning_radius), 
+                     "path":rs.path_sample(start, end, turning_radius, step_size)}
+        return RS_result
 
     def _calc_new_point(self, near_vertex, q_rand, waypoint_step_size, _extend_len=1.0):
         """ Compute the state using the randomly sampled state and its nearest neighbor
@@ -101,13 +123,28 @@ class RRT(object): # assume 2d car-like non-holonomic robot
         """
         ### TODO ###
         # HINT: You should use the get_RS_result function that you code.
-        # max_waypoint_number=int(decimal.Decimal(str(_extend_len))//decimal.Decimal(str(waypoint_step_size)))-1
-        # q_new=
-        # RS_result["path_cost"]=
-        # RS_result["path"]=
-        # return RS_result, q_new #Dict, tuple
-        pass
-    
+        max_waypoint_number = int(decimal.Decimal(str(_extend_len))//decimal.Decimal(str(waypoint_step_size)))-1
+        q_new_list = rs.path_sample(near_vertex.q, 
+                                    q_rand, 
+                                    self.turning_radius, 
+                                    waypoint_step_size)
+
+        iter = range(min(max_waypoint_number, len(q_new_list)))
+
+        for i in iter:
+            if (self.is_collision(q_new_list[i])):
+                break
+            
+            q_new = q_new_list[i]
+
+        # print("near_vertex.q :", near_vertex.q)
+        # print("q_new :", q_new)
+
+        RS_result = self.get_RS_result(near_vertex.q, 
+                                       q_new, 
+                                       self.turning_radius, 
+                                       waypoint_step_size)
+        return RS_result, q_new  # Dict, tuple
 
     def add(self, q_new, vertex_near, RS_result):
         """ Creates a new vertex and add it to the tree
@@ -117,12 +154,11 @@ class RRT(object): # assume 2d car-like non-holonomic robot
           @param RS_result - dict
           @return Vertex, new vertex
         """
-        v_new=Vertex(q_new,vertex_near,RS_result)
+        v_new = Vertex(q_new, vertex_near, RS_result)
         vertex_near.children.append(v_new)
         self.vertices.append(v_new)
         self.qs.append(q_new)
         return v_new
-
 
     def extend(self, q_rand):
         """ Adds a vertex to the tree given a randomly sampled state
@@ -132,14 +168,14 @@ class RRT(object): # assume 2d car-like non-holonomic robot
         """
         ### TODO ###
         # (HINT: You should use the nearest_neighbor, and calc_new_point functions)
-        # v_new=self.add(q_new, near_vertex, RS_result)
-        # self._num_vertices += 1
-        # return v_new
-        return None 
+        nearest_neighbor = self.search_nearest_vertex(q_rand)
+        RS_result, q_new = self._calc_new_point(nearest_neighbor, q_rand, self.waypoint_step_size, self._extend_len)
+        v_new = self.add(q_new, nearest_neighbor, RS_result)
+        self._num_vertices += 1
+        return v_new
 
     def is_collision(self, p):
         return not self._env.collision_free_state(p)
-
 
     def euclidian_distance(self, p1, p2):
         """ Returns the euclidian distance between 2 states
@@ -149,7 +185,6 @@ class RRT(object): # assume 2d car-like non-holonomic robot
           @return float, the euclidian distance
         """
         return math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
-    
 
     def angular_distance(self, p1, p2):
         """ Returns the angular distance between 2 states
@@ -158,8 +193,10 @@ class RRT(object): # assume 2d car-like non-holonomic robot
           @param p2 - tuple of (x,y,yaw), a state
           @return float, the angular distance
         """
-        return abs(p1[2] - p2[2])
+        p1_ori = math.atan2(math.sin(p1[2]), math.cos(p1[2]))
+        p2_ori = math.atan2(math.sin(p2[2]), math.cos(p2[2]))
 
+        return math.acos(math.cos(p1_ori)*math.cos(p2_ori) + math.sin(p1_ori)*math.sin(p2_ori))
 
     def is_goal_reached(self, q, goal, goal_region_threshold):
         """ Returns whether a state q is in the goal region
@@ -174,7 +211,6 @@ class RRT(object): # assume 2d car-like non-holonomic robot
             return True
         else:
             return False
-    
 
     def reconstruct_path(self, end):
         """ Returns the path to reach a vertex from the start
@@ -190,7 +226,6 @@ class RRT(object): # assume 2d car-like non-holonomic robot
         path.append((v.q, []))
         path.reverse()
         return path
-    
 
     def update_best(self):
         """ Finds the best state in the goal region (self._q_goal_set) and updates self._q_best and self._best_cost

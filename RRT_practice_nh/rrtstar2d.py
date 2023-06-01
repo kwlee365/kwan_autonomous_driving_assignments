@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import math
 from rrt2d import RRT as RRTBase
+import reeds_shepp as rs
 
 class RRTstar(RRTBase):
     def __init__(self, q_init, env, extend_len=1.0, waypoint_step_size=1, dimension=2):
@@ -19,8 +20,22 @@ class RRTstar(RRTBase):
           @return list of tuples (Vertex v, Dict RS_result)
         """
         ### TODO ###
-        # return v_near
-        pass
+        # NEAR function
+      
+        v_near = []
+        
+        for vertex in vertex_set:
+          RS_result = self.get_RS_result(vertex.q, v_new.q, self.turning_radius, self.waypoint_step_size)
+          is_collision = False
+          if (0.1 <= RS_result["path_cost"] < self._near_distance):
+            for near_to_vertex_waypoints in RS_result["path"]:
+              if (self.is_collision(near_to_vertex_waypoints)):
+                is_collision = True
+                break
+            if not (is_collision):
+              v_near.append([vertex, RS_result])
+
+        return v_near
 
     def update_cost_R(self, v):
         for v_child in v.children:
@@ -48,8 +63,36 @@ class RRTstar(RRTBase):
           @param v_new - Vertex, the newly added vertex
         """
         ### TODO ###
-        pass
-                
+        d = self._dimension
+        n = len(self.vertices)
+        
+        self._near_distance = self._gamma * math.pow((math.log(n) / n), 1/d)
+        v_near = self.valid_near(v_new, vertex_set= self.vertices)
+        
+        # ChooseParent function
+        v_parent = []
+        v_parent_cost = math.inf
+        for candidate_parent in v_near:
+          node_cost = candidate_parent[0].get_cost()    # init -> parent
+          path_cost = candidate_parent[1]["path_cost"]  # parent -> v_new
+          total_cost = node_cost + path_cost
+          
+          if(total_cost < v_parent_cost):
+            v_parent = candidate_parent
+            v_parent_cost = total_cost
+        
+        # ADD
+        if v_parent:
+          self.change_parent(v_parent[0], v_new, v_parent[1], reversed_path=False)
+        
+        # REWIRE
+        v_child = []
+        for candidate_child in v_near:
+          prev_child_cost = candidate_child[0].get_cost()                    # init -> child
+          v_child_cost = v_new.get_cost() + candidate_child[1]["path_cost"]  # init -> new + new -> child
+          if(v_child_cost < prev_child_cost):
+            v_child = candidate_child
+            self.change_parent(v_new, v_child[0], v_child[1], reversed_path=True)
     
 
 

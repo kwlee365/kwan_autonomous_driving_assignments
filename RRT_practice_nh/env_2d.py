@@ -186,12 +186,12 @@ class Env2D():
     
     # Check Collision
     np_circles_center_image_coordinates = np.array(circles_center_image_coordinates)
-    colision_within_r = self.kd_tree.query_radius(np_circles_center_image_coordinates, 
-                                                  self.collision_radius, 
-                                                  return_distance=False, 
-                                                  count_only=True, 
-                                                  sort_results=False)
-    if not np.all(colision_within_r == 0):
+    collision_within_r = self.kd_tree.query_radius(np_circles_center_image_coordinates, 
+                                                   self.collision_radius, 
+                                                   return_distance=False, 
+                                                   count_only=True, 
+                                                   sort_results=False)
+    if not np.all(collision_within_r == 0):
       return False
     
     return True
