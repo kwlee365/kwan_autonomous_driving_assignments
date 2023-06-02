@@ -26,13 +26,16 @@ class RRTstar(RRTBase):
         
         for vertex in vertex_set:
           RS_result = self.get_RS_result(vertex.q, v_new.q, self.turning_radius, self.waypoint_step_size)
-          is_collision = False
-          if (0.1 <= RS_result["path_cost"] < self._near_distance):
+          is_continue = False
+          if (RS_result["path_cost"] < self._near_distance) and not(vertex.q == v_new.q):
             for near_to_vertex_waypoints in RS_result["path"]:
               if (self.is_collision(near_to_vertex_waypoints)):
-                is_collision = True
+                is_continue = True
                 break
-            if not (is_collision):
+              
+            if (is_continue):
+              continue  # if collision occurs, for loop break
+            else:
               v_near.append([vertex, RS_result])
 
         return v_near
@@ -89,7 +92,7 @@ class RRTstar(RRTBase):
         v_child = []
         for candidate_child in v_near:
           prev_child_cost = candidate_child[0].get_cost()                    # init -> child
-          v_child_cost = v_new.get_cost() + candidate_child[1]["path_cost"]  # init -> new + new -> child
+          v_child_cost = v_new.get_cost() + candidate_child[1]["path_cost"]  # (init -> v_new) + (v_new -> child)
           if(v_child_cost < prev_child_cost):
             v_child = candidate_child
             self.change_parent(v_new, v_child[0], v_child[1], reversed_path=True)

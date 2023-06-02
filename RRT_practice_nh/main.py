@@ -16,7 +16,7 @@ from rrtstar2d import RRTstar
 
 #RRT visualization parameters
 visualize_tree = 'all' #None, 'solution_path' or 'all'
-visualize_tree_iter=1000 #None or int
+visualize_tree_iter=500 #None or int
 visualize_vid = True #bool
 
 #Set some problem parameters
@@ -224,12 +224,11 @@ def test_collision():
 def main():
     # test_collision() #assignment question 1
     # test_random_samples() #assignment question 1
-    # launch_RRT("RRT") #assignment question 2
-    launch_RRT("RRTstar") #assignment question 3
+    launch_RRT("RRT") #assignment question 2
+    # launch_RRT("RRTstar") #assignment question 3
 
 
 if __name__ == "__main__":
     main()
-
 
 # %%
