@@ -1,8 +1,8 @@
 # RRT python assignment :
 
 ## Topics Intelligent Convergence Systems (2023) 
-%%% That code belongs to the DYROS, Seoul National University.
-%%% This code is written for the class material.
+- That code belongs to the DYROS, Seoul National University.
+- This code is written for the class material.
 
 ## Dependencies :
 - Python 3.8, other versions might cause compatibility issues! (spyder recommended)
